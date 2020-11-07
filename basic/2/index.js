@@ -12,9 +12,10 @@ const vertexShaderSource = `
 
 const fragmentShaderSource = `
   precision mediump float;
+  uniform vec4 u_color;
 
   void main() {
-    gl_FragColor = vec4(0, 0, 1, 1);
+    gl_FragColor = vec4(u_color);
   }
 `;
 
@@ -94,6 +95,10 @@ gl.useProgram(program);
 
 const resolutionUniformLocation = gl.getUniformLocation(program, "u_resolution");
 gl.uniform2f(resolutionUniformLocation, gl.canvas.width, gl.canvas.height);
+
+
+const colorUniformLocation = gl.getUniformLocation(program, "u_color");
+gl.uniform4f(colorUniformLocation, 0, 1, 0, 1);
 
 /* --------------------------------------------------------------------------------- */
 /* 属性(a_position)にバッファ(positionBuffer)の内容を流し込む */
