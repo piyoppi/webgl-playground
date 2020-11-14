@@ -5,10 +5,11 @@ const vertexShaderSource = `
   varying vec2 v_texCoord;
   uniform vec2 u_translation;
   uniform vec2 u_rotation;
+  uniform vec2 u_scale;
 
   void main() {
     // ピクセル空間座標からクリップ空間座標に変換
-    vec2 translatedPosition = a_position + u_translation;
+    vec2 translatedPosition = (a_position + u_translation) * u_scale;
     vec2 rotatedPosition = mat2(u_rotation.x, -u_rotation.y, u_rotation.y, u_rotation.x) * translatedPosition;
     vec2 clipSpace = ((rotatedPosition / u_resolution) * 2.0) - 1.0;
 
@@ -125,6 +126,7 @@ class Camera {
   constructor() {
     this.position = [0, 0];
     this.rotation = [0, 1];
+    this.scale = [1, 1];
   }
 
   setRotation(deg) {
@@ -134,7 +136,6 @@ class Camera {
   }
 }
 
-
 let canvas = null;
 let gl = null;
 let texCoordLocation;
@@ -143,6 +144,7 @@ let textureLocation;
 let resolutionUniformLocation;
 let translationLocation;
 let rotationLocation;
+let scaleLocation;
 
 const sprites = [];
 const camera = new Camera();
@@ -164,6 +166,7 @@ function initialize() {
   resolutionUniformLocation = gl.getUniformLocation(program, "u_resolution");
   translationLocation = gl.getUniformLocation(program, "u_translation");
   rotationLocation = gl.getUniformLocation(program, "u_rotation");
+  scaleLocation = gl.getUniformLocation(program, "u_scale");
 
   // キャンバスサイズの設定
   gl.uniform2f(resolutionUniformLocation, gl.canvas.width, gl.canvas.height);
@@ -210,23 +213,24 @@ function uploadVertex() {
   gl.vertexAttribPointer(positionAttributeLocation, 2, gl.FLOAT, false, 0, 0);
 }
 
-function render(cameraPosition, cameraRotation) {
+function render(cameraPosition, cameraRotation, cameraScale) {
   /* --------------------------------------------------------------------------------- */
   /* 描画の下準備 */
   gl.clearColor(0, 0, 0, 0);
   gl.clear(gl.COLOR_BUFFER_BIT);
 
   /* --------------------------------------------------------------------------------- */
-  /* カメラの移動と回転 */
+  /* カメラの移動と回転と拡大縮小 */
   gl.uniform2fv(translationLocation, cameraPosition);
   gl.uniform2fv(rotationLocation, cameraRotation);
+  gl.uniform2fv(scaleLocation, cameraScale);
 
   /* 頂点ベクトルの始点（0）から n つぶんの頂点を利用してプリミティブを描画 */
   gl.drawArrays(gl.TRIANGLES, 0, 6 * sprites.length);
 }
 
 function step() {
-  render(camera.position, camera.rotation);
+  render(camera.position, camera.rotation, camera.scale);
   requestAnimationFrame(step);
 }
 
@@ -244,6 +248,7 @@ image.onload = () => {
   sprites.push(sprite2);
 
   camera.setRotation(10);
+  camera.scale = [1.5, 1.5];
   uploadVertex();
   step();
 };
