@@ -4,10 +4,13 @@ const vertexShaderSource = `
   uniform vec2 u_resolution; 
   varying vec2 v_texCoord;
   uniform vec2 u_translation;
+  uniform vec2 u_rotation;
 
   void main() {
     // ピクセル空間座標からクリップ空間座標に変換
-    vec2 clipSpace = (((a_position + u_translation) / u_resolution) * 2.0) - 1.0;
+    vec2 translatedPosition = a_position + u_translation;
+    vec2 rotatedPosition = mat2(u_rotation.x, -u_rotation.y, u_rotation.y, u_rotation.x) * translatedPosition;
+    vec2 clipSpace = ((rotatedPosition / u_resolution) * 2.0) - 1.0;
 
     vec2 position = clipSpace * vec2(1, -1);
     gl_Position = vec4(position, 0, 1);
@@ -58,37 +61,6 @@ function createProgram(gl, vertexShader, fragmentShader) {
   }
 
   return program;
-}
-
-const sprites = [];
-
-let canvas = null;
-let gl = null;
-let texCoordLocation;
-let positionAttributeLocation;
-let textureLocation;
-let resolutionUniformLocation;
-let translationLocation;
-
-function initialize() {
-  canvas = document.getElementById("canvas");
-  gl = canvas.getContext("webgl");
-
-  const vertexShader = createShader(gl, gl.VERTEX_SHADER, vertexShaderSource);
-  const fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fragmentShaderSource);
-  const program = createProgram(gl, vertexShader, fragmentShader);
-
-  gl.useProgram(program);
-  gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-
-  texCoordLocation = gl.getAttribLocation(program, "a_texCoord");
-  positionAttributeLocation = gl.getAttribLocation(program, "a_position");
-  textureLocation = gl.getUniformLocation(program, "u_image");
-  resolutionUniformLocation = gl.getUniformLocation(program, "u_resolution");
-  translationLocation = gl.getUniformLocation(program, "u_translation");
-
-  // キャンバスサイズの設定
-  gl.uniform2f(resolutionUniformLocation, gl.canvas.width, gl.canvas.height);
 }
 
 class Sprite {
@@ -149,6 +121,54 @@ class Sprite {
   }
 }
 
+class Camera {
+  constructor() {
+    this.position = [0, 0];
+    this.rotation = [0, 1];
+  }
+
+  setRotation(deg) {
+    const rad = (deg / 180.0) * 2.0 * Math.PI
+    this.rotation[0] = Math.cos(rad);
+    this.rotation[1] = Math.sin(rad);
+  }
+}
+
+
+let canvas = null;
+let gl = null;
+let texCoordLocation;
+let positionAttributeLocation;
+let textureLocation;
+let resolutionUniformLocation;
+let translationLocation;
+let rotationLocation;
+
+const sprites = [];
+const camera = new Camera();
+
+function initialize() {
+  canvas = document.getElementById("canvas");
+  gl = canvas.getContext("webgl");
+
+  const vertexShader = createShader(gl, gl.VERTEX_SHADER, vertexShaderSource);
+  const fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fragmentShaderSource);
+  const program = createProgram(gl, vertexShader, fragmentShader);
+
+  gl.useProgram(program);
+  gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+
+  texCoordLocation = gl.getAttribLocation(program, "a_texCoord");
+  positionAttributeLocation = gl.getAttribLocation(program, "a_position");
+  textureLocation = gl.getUniformLocation(program, "u_image");
+  resolutionUniformLocation = gl.getUniformLocation(program, "u_resolution");
+  translationLocation = gl.getUniformLocation(program, "u_translation");
+  rotationLocation = gl.getUniformLocation(program, "u_rotation");
+
+  // キャンバスサイズの設定
+  gl.uniform2f(resolutionUniformLocation, gl.canvas.width, gl.canvas.height);
+}
+
 function uploadVertex() {
   const targetSprite = sprites[0];
 
@@ -162,7 +182,6 @@ function uploadVertex() {
     vertexes,
     gl.STATIC_DRAW
   );
-  console.log(vertexes);
 
   /* --------------------------------------------------------------------------------- */
   /* テクスチャマッピング */
@@ -191,25 +210,23 @@ function uploadVertex() {
   gl.vertexAttribPointer(positionAttributeLocation, 2, gl.FLOAT, false, 0, 0);
 }
 
-function render(cameraPosition) {
+function render(cameraPosition, cameraRotation) {
   /* --------------------------------------------------------------------------------- */
   /* 描画の下準備 */
   gl.clearColor(0, 0, 0, 0);
   gl.clear(gl.COLOR_BUFFER_BIT);
 
   /* --------------------------------------------------------------------------------- */
-  /* カメラの移動 */
+  /* カメラの移動と回転 */
   gl.uniform2fv(translationLocation, cameraPosition);
+  gl.uniform2fv(rotationLocation, cameraRotation);
 
   /* 頂点ベクトルの始点（0）から n つぶんの頂点を利用してプリミティブを描画 */
   gl.drawArrays(gl.TRIANGLES, 0, 6 * sprites.length);
 }
 
-const cameraPosition = [0, 0];
 function step() {
-  render(cameraPosition);
-  cameraPosition[0]++;
-  if( cameraPosition[0] > 300 ) cameraPosition[0] = 0;
+  render(camera.position, camera.rotation);
   requestAnimationFrame(step);
 }
 
@@ -218,14 +235,15 @@ image.src = "image.png";
 image.onload = () => {
   initialize();
 
-  const sprite = new Sprite(0, 0, 100, 100, image);
+  const sprite = new Sprite(50, 50, 100, 100, image);
   sprite.initialize(gl);
   sprites.push(sprite);
 
-  const sprite2 = new Sprite(50, 100, 50, 50, image);
+  const sprite2 = new Sprite(100, 200, 50, 50, image);
   sprite2.initialize(gl);
   sprites.push(sprite2);
 
+  camera.setRotation(10);
   uploadVertex();
   step();
 };
