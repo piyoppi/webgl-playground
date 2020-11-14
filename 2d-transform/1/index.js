@@ -64,7 +64,11 @@ const sprites = [];
 
 let canvas = null;
 let gl = null;
-let program = null;
+let texCoordLocation;
+let positionAttributeLocation;
+let textureLocation;
+let resolutionUniformLocation;
+let translationLocation;
 
 function initialize() {
   canvas = document.getElementById("canvas");
@@ -72,17 +76,21 @@ function initialize() {
 
   const vertexShader = createShader(gl, gl.VERTEX_SHADER, vertexShaderSource);
   const fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fragmentShaderSource);
-  program = createProgram(gl, vertexShader, fragmentShader);
+  const program = createProgram(gl, vertexShader, fragmentShader);
 
   gl.useProgram(program);
   gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+
+  texCoordLocation = gl.getAttribLocation(program, "a_texCoord");
+  positionAttributeLocation = gl.getAttribLocation(program, "a_position");
+  textureLocation = gl.getUniformLocation(program, "u_image");
+  resolutionUniformLocation = gl.getUniformLocation(program, "u_resolution");
+  translationLocation = gl.getUniformLocation(program, "u_translation");
+
+  // キャンバスサイズの設定
+  gl.uniform2f(resolutionUniformLocation, gl.canvas.width, gl.canvas.height);
 }
 
-function addSprite(image) {
-  const sprite = new Sprite(0, 0, 100, 100, image);
-  sprite.initialize(gl);
-  sprites.push(sprite);
-}
 
 class Sprite {
   constructor(x, y, width, height, image) {
@@ -92,14 +100,14 @@ class Sprite {
     this.height = height;
     this.image = image;
 
-    this.mapping = new Float32Array([
+    this.mapping = [
       0.0,  0.0,
       1.0,  0.0,
       0.0,  1.0,
       0.0,  1.0,
       1.0,  0.0,
       1.0,  1.0
-    ]);
+    ];
 
     this.rectangle = null;
     this.texture = null;
@@ -110,14 +118,14 @@ class Sprite {
     const x2 = this.x + this.width;
     const y2 = this.y + this.height;
 
-    this.rectangle = new Float32Array([
+    this.rectangle = [
       x1, y1,
       x2, y1,
       x1, y2,
       x1, y2,
       x2, y1,
       x2, y2
-    ]);
+    ];
   }
 
   initialize(gl) {
@@ -142,41 +150,34 @@ class Sprite {
   }
 }
 
-function render(cameraPosition) {
+function uploadVertex() {
   const targetSprite = sprites[0];
 
   /* --------------------------------------------------------------------------------- */
   /* positionBuffer に頂点データをセットする */
   const positionBuffer = gl.createBuffer();
+  const vertexes = new Float32Array(sprites.map( sprite => sprite.rectangle ).flat());
   gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, targetSprite.rectangle, gl.STATIC_DRAW);
+  gl.bufferData(
+    gl.ARRAY_BUFFER,
+    vertexes,
+    gl.STATIC_DRAW
+  );
+  console.log(vertexes);
 
   /* --------------------------------------------------------------------------------- */
   /* テクスチャマッピング */
-  const texCoordLocation = gl.getAttribLocation(program, "a_texCoord");
-
   const texCoordBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, texCoordBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, targetSprite.mapping, gl.STATIC_DRAW);
+  gl.bufferData(
+    gl.ARRAY_BUFFER,
+    new Float32Array(sprites.map( sprite => sprite.mapping ).flat()),
+    gl.STATIC_DRAW
+  );
   gl.enableVertexAttribArray(texCoordLocation);
   gl.vertexAttribPointer(texCoordLocation, 2, gl.FLOAT, false, 0, 0);
 
-  const translationLocation = gl.getUniformLocation(program, "u_translation");
-  gl.uniform2fv(translationLocation, cameraPosition);
-
   /* --------------------------------------------------------------------------------- */
-  /* 描画の下準備 */
-
-  gl.clearColor(0, 0, 0, 0);
-  gl.clear(gl.COLOR_BUFFER_BIT);
-
-  /* --------------------------------------------------------------------------------- */
-
-  const resolutionUniformLocation = gl.getUniformLocation(program, "u_resolution");
-  gl.uniform2f(resolutionUniformLocation, gl.canvas.width, gl.canvas.height);
-
-  const textureLocation = gl.getUniformLocation(program, "u_image");
-
   const unit = 0;
   // どのテクスチャをアクティブにするか
   gl.activeTexture(gl.TEXTURE0 + unit);
@@ -186,14 +187,23 @@ function render(cameraPosition) {
 
   /* --------------------------------------------------------------------------------- */
   /* 属性(a_position)にバッファ(positionBuffer)の内容を流し込む */
-
-  const positionAttributeLocation = gl.getAttribLocation(program, "a_position");
   gl.enableVertexAttribArray(positionAttributeLocation);
   gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
   gl.vertexAttribPointer(positionAttributeLocation, 2, gl.FLOAT, false, 0, 0);
+}
 
-  /* 頂点ベクトルの始点（0）から 6 つぶんの頂点を利用してプリミティブを描画 */
-  gl.drawArrays(gl.TRIANGLES, 0, 6);
+function render(cameraPosition) {
+  /* --------------------------------------------------------------------------------- */
+  /* 描画の下準備 */
+  gl.clearColor(0, 0, 0, 0);
+  gl.clear(gl.COLOR_BUFFER_BIT);
+
+  /* --------------------------------------------------------------------------------- */
+  /* カメラの移動 */
+  gl.uniform2fv(translationLocation, cameraPosition);
+
+  /* 頂点ベクトルの始点（0）から n つぶんの頂点を利用してプリミティブを描画 */
+  gl.drawArrays(gl.TRIANGLES, 0, 6 * sprites.length);
 }
 
 const cameraPosition = [0, 0];
@@ -208,6 +218,15 @@ const image = new Image();
 image.src = "image.png";
 image.onload = () => {
   initialize();
-  addSprite(image);
+
+  const sprite = new Sprite(0, 0, 100, 100, image);
+  sprite.initialize(gl);
+  sprites.push(sprite);
+
+  const sprite2 = new Sprite(50, 100, 50, 50, image);
+  sprite2.initialize(gl);
+  sprites.push(sprite2);
+
+  uploadVertex();
   step();
 };
