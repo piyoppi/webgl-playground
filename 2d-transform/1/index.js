@@ -3,12 +3,14 @@ const vertexShaderSource = `
   attribute vec2 a_texCoord;
   uniform vec2 u_resolution; 
   varying vec2 v_texCoord;
+  uniform vec2 u_translation;
 
   void main() {
     // ピクセル空間座標からクリップ空間座標に変換
-    vec2 clipSpace = ((a_position / u_resolution) * 2.0) - 1.0;
+    vec2 clipSpace = (((a_position + u_translation) / u_resolution) * 2.0) - 1.0;
 
-    gl_Position = vec4(clipSpace * vec2(1, -1), 0, 1);
+    vec2 position = clipSpace * vec2(1, -1);
+    gl_Position = vec4(position, 0, 1);
 
     // フラグメントシェーダに値を引き継ぐ
     v_texCoord = a_texCoord;
@@ -140,8 +142,7 @@ class Sprite {
   }
 }
 
-function render() {
-
+function render(cameraPosition) {
   const targetSprite = sprites[0];
 
   /* --------------------------------------------------------------------------------- */
@@ -159,6 +160,9 @@ function render() {
   gl.bufferData(gl.ARRAY_BUFFER, targetSprite.mapping, gl.STATIC_DRAW);
   gl.enableVertexAttribArray(texCoordLocation);
   gl.vertexAttribPointer(texCoordLocation, 2, gl.FLOAT, false, 0, 0);
+
+  const translationLocation = gl.getUniformLocation(program, "u_translation");
+  gl.uniform2fv(translationLocation, cameraPosition);
 
   /* --------------------------------------------------------------------------------- */
   /* 描画の下準備 */
@@ -192,12 +196,11 @@ function render() {
   gl.drawArrays(gl.TRIANGLES, 0, 6);
 }
 
+const cameraPosition = [0, 0];
 function step() {
-  render();
-  const targetSprite = sprites[0];
-  targetSprite.x += 1;
-  targetSprite.setRectangle();
-  if( targetSprite.x > 500 ) targetSprite.x = 0;
+  render(cameraPosition);
+  cameraPosition[0]++;
+  if( cameraPosition[0] > 300 ) cameraPosition[0] = 0;
   requestAnimationFrame(step);
 }
 
