@@ -1,11 +1,12 @@
 const vertexShaderSource = `
   attribute vec4 a_position;
   attribute vec4 a_color;
+  uniform mat4 u_camera_matrix;
   uniform mat4 u_matrix;
   varying vec4 v_color;
 
   void main() {
-    gl_Position = u_matrix * a_position;
+    gl_Position = u_camera_matrix * u_matrix * a_position;
     v_color = a_color;
   }
 `;
@@ -49,6 +50,10 @@ function createProgram(gl, vertexShader, fragmentShader) {
   }
 
   return program;
+}
+
+function deg2rad(deg) {
+  return (deg / 180.0) * 2.0 * Math.PI;
 }
 
 class Mat4 {
@@ -215,9 +220,36 @@ class Cube {
     this.depth = depth;
     this.vertexes = [];
     this.vertexColors = [];
+    this.matrix = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
+    this.transformes = [];
 
     this.setVertexes();
     this.setColors();
+  }
+
+  setRotateZ(deg, index = -1) {
+    const rotateMat = [
+      Mat4.translate(-this.x, -this.y, 0),
+      Mat4.rotateZ(deg2rad(deg)),
+      Mat4.translate(this.x, this.y, 0),
+    ];
+    this._setTransformes(Mat4.mulAll(rotateMat));
+  }
+
+  clearTransform() {
+    this.transformes.length = 0;
+  }
+
+  _setTransformes(mat, index) {
+    if( index >= 0 ) {
+      this.transformes[index] = mat;
+    } else {
+      this.transformes.push(mat);
+    }
+  }
+
+  calcTransformMatrix() {
+    this.matrix = new Float32Array(Mat4.mulAll(this.transformes));
   }
 
   setVertexes() {
@@ -321,6 +353,7 @@ const canvas = document.getElementById("canvas");
 let gl = null;
 let vertexColorAttributeLocation;
 let positionAttributeLocation;
+let cameraMatrixLocation;
 let matrixLocation;
 let camera;
 
@@ -339,6 +372,7 @@ function initialize() {
 
   vertexColorAttributeLocation = gl.getAttribLocation(program, "a_color");
   positionAttributeLocation = gl.getAttribLocation(program, "a_position");
+  cameraMatrixLocation = gl.getUniformLocation(program, "u_camera_matrix");
   matrixLocation = gl.getUniformLocation(program, "u_matrix");
 }
 
@@ -388,13 +422,22 @@ function render(camera) {
 
   /* --------------------------------------------------------------------------------- */
   /* カメラの移動と回転と拡大縮小 */
-  gl.uniformMatrix4fv(matrixLocation, false, camera.matrix);
+  gl.uniformMatrix4fv(cameraMatrixLocation, false, camera.matrix);
 
-  /* 頂点ベクトルの始点（0）から n つぶんの頂点を利用してプリミティブを描画 */
-  gl.drawArrays(gl.TRIANGLES, 0, primitives.reduce((acc, val) => acc + val.vertexes.length, 0) / 3);
+  for(let i = 0; i < primitives.length; i++ ) {
+    gl.uniformMatrix4fv(matrixLocation, false, primitives[i].matrix);
+
+    /* 頂点ベクトルの始点（0）から n つぶんの頂点を利用してプリミティブを描画 */
+    gl.drawArrays(gl.TRIANGLES, 0, primitives[i].vertexes.length / 3);
+  }
 }
 
+let rotZ = 0;
 function step() {
+  const primitive = primitives[0];
+  primitive.clearTransform();
+  primitive.setRotateZ(rotZ++);
+  primitive.calcTransformMatrix();
   render(camera);
   requestAnimationFrame(step);
 }
