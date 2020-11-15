@@ -85,6 +85,33 @@ class Mat3 {
     }
     return currentMat;
   }
+
+  static rotate(rad) {
+    const cos = Math.cos(rad);
+    const sin = Math.sin(rad);
+
+    return [
+      cos, sin,  0.0,
+      -sin, cos,  0.0,
+      0.0,  0.0,  1.0
+    ];
+  }
+
+  static translate(x, y) {
+    return [
+      1.0, 0.0, 0.0,
+      0.0, 1.0, 0.0,
+        x,   y, 1.0
+    ];
+  }
+
+  static scale(x, y) {
+    return [
+        x, 0.0, 0.0,
+      0.0,   y, 0.0,
+      0.0, 0.0, 1.0
+    ];
+  }
 }
 
 class Mat1 {
@@ -168,45 +195,28 @@ class Camera {
     const sin = Math.sin(rad);
 
     const transformes = [
-      // カメラ平行移動
-      [
-        1.0,       0.0, 0.0,
-        0.0,       1.0, 0.0,
-        pos[0], pos[1], 1.0
-      ],
-      // 回転
-      [
-          cos, sin,  0.0,
-         -sin, cos,  0.0,
-         0.0,  0.0,  1.0
-      ],
-      // スケーリング
-      [
-        scale[0],      0.0,   0.0,
-             0.0, scale[1],   0.0,
-             0.0,      0.0,   1.0
-      ],
-      // クリップ空間座標に変換
-      [
-        (2.0 / this.width),                 0.0,  0.0,
-                       0.0, (2.0 / this.height),  0.0,
-                       0.0,                 0.0,  1.0
-      ],
-      [
-        1.0,     0.0,   0.0,
-        0.0,     1.0,   0.0,
-        -1.0,   -1.0,   1.0
-      ],
+      // カメラを移動するとスプライトは逆向きに動くので反転
+      Mat3.scale(-1.0, -1.0),
+      // カメラの平行移動
+      Mat3.translate(pos[0], pos[1]),
+      // 回転中心をカメラ中心にする
+      Mat3.translate(this.width / 2.0, this.height / 2.0),
+      // カメラの回転
+      Mat3.rotate(rad),
+      // 中心座標を戻す
+      Mat3.translate(-this.width / 2.0, -this.height / 2.0),
+      // 反転を戻す
+      Mat3.scale(-1.0, -1.0),
+      // スケール変換
+      Mat3.scale(scale[0], scale[1]),
+      //クリップ座標系に変換
+      Mat3.scale(2.0 / this.width, 2.0 / this.height),
+      Mat3.translate(-1.0, -1.0),
       // Y軸のみ反転
-      [
-        1.0,    0.0,   0.0,
-        0.0,   -1.0,   0.0,
-        0.0,    0.0,   1.0
-      ]
+      Mat3.scale(1.0, -1.0),
     ];
 
     this.matrix = new Float32Array(Mat3.mulAll(transformes));
-    console.log(this.matrix);
   }
 }
 
@@ -310,7 +320,7 @@ image.onload = () => {
   sprite2.initialize(gl);
   sprites.push(sprite2);
 
-  camera.setTransformMatrix([0.0, 0.0], 0.0, [1.0, 1.0]);
+  camera.setTransformMatrix([-20.0, -20.0], 20.0, [1.0, 1.0]);
 
   uploadVertex();
   step();
