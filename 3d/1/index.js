@@ -167,46 +167,79 @@ class Plane {
     this.vertexes = Plane.xyPlaneVertexes(this.x, this.y, this.z, this.width, this.height);
   }
 
-  static xyPlaneVertexes(x1, y1, z, width, height) {
+  static xyPlaneVertexes(x1, y1, z, width, height, isFront) {
     const x2 = x1 + width;
     const y2 = y1 + height;
 
-    return [
-      x1, y1, z,
-      x2, y1, z,
-      x1, y2, z,
-      x1, y2, z,
-      x2, y1, z,
-      x2, y2, z
-    ];
+    if( isFront ) {
+      return [
+        x1, y1, z,
+        x1, y2, z,
+        x2, y1, z,
+        x1, y2, z,
+        x2, y2, z,
+        x2, y1, z,
+      ];
+    } else {
+      return [
+        x1, y2, z,
+        x1, y1, z,
+        x2, y1, z,
+        x2, y2, z,
+        x1, y2, z,
+        x2, y1, z,
+      ];
+    }
   }
 
-  static zyPlaneVertexes(x, y1, z1, height, depth) {
+  static zyPlaneVertexes(x, y1, z1, height, depth, isFront) {
     const y2 = y1 + height;
     const z2 = z1 + depth;
 
-    return [
-      x, y1, z1,
-      x, y1, z2,
-      x, y2, z1,
-      x, y2, z1,
-      x, y1, z2,
-      x, y2, z2
-    ];
+    if( isFront ) {
+      return [
+        x, y1, z1,
+        x, y2, z1,
+        x, y1, z2,
+        x, y2, z1,
+        x, y2, z2,
+        x, y1, z2,
+      ];
+    } else {
+      return [
+        x, y1, z1,
+        x, y1, z2,
+        x, y2, z1,
+        x, y2, z1,
+        x, y1, z2,
+        x, y2, z2,
+      ];
+    }
   }
 
-  static xzPlaneVertexes(x1, y, z1, width, depth) {
+  static xzPlaneVertexes(x1, y, z1, width, depth, isFront) {
     const x2 = x1 + width;
     const z2 = z1 + depth;
 
-    return [
-      x1, y, z1,
-      x2, y, z1,
-      x1, y, z2,
-      x1, y, z2,
-      x2, y, z1,
-      x2, y, z2
-    ];
+    if( isFront ) {
+      return [
+        x1, y, z1,
+        x1, y, z2,
+        x2, y, z1,
+        x1, y, z2,
+        x2, y, z2,
+        x2, y, z1,
+      ];
+    } else {
+      return [
+        x1, y, z1,
+        x2, y, z1,
+        x1, y, z2,
+        x1, y, z2,
+        x2, y, z1,
+        x2, y, z2
+      ];
+    }
   }
 }
 
@@ -260,11 +293,12 @@ class Cube {
     ];
 
     this.vertexes = [
-      ...Plane.xyPlaneVertexes(this.x - center[0], this.y - center[1], this.z - center[2], this.width, this.height),
-      ...Plane.zyPlaneVertexes(this.x + center[0], this.y - center[1], this.z - center[2], this.height, this.depth),
-      ...Plane.xyPlaneVertexes(this.x - center[0], this.y - center[1], this.z + center[2], this.width, this.height),
-      ...Plane.zyPlaneVertexes(this.x - center[0], this.y - center[1], this.z - center[2], this.height, this.depth),
-      ...Plane.xzPlaneVertexes(this.x - center[0], this.y - center[1], this.z - center[2], this.width, this.depth),
+      ...Plane.xyPlaneVertexes(this.x - center[0], this.y - center[1], this.z - center[2], this.width, this.height, true),
+      ...Plane.zyPlaneVertexes(this.x + center[0], this.y - center[1], this.z - center[2], this.height, this.depth, true),
+      ...Plane.xyPlaneVertexes(this.x - center[0], this.y - center[1], this.z + center[2], this.width, this.height, false),
+      ...Plane.zyPlaneVertexes(this.x - center[0], this.y - center[1], this.z - center[2], this.height, this.depth, false),
+      ...Plane.xzPlaneVertexes(this.x - center[0], this.y + center[1], this.z - center[2], this.width, this.depth, true),
+      ...Plane.xzPlaneVertexes(this.x - center[0], this.y - center[1], this.z - center[2], this.width, this.depth, false),
     ]
   }
 
@@ -298,12 +332,19 @@ class Cube {
       0, 255, 255, 255,
       0, 255, 255, 255,
 
-      255, 0, 0, 255,
-      255, 0, 0, 255,
-      255, 0, 0, 255,
-      255, 0, 0, 255,
-      255, 0, 0, 255,
-      255, 0, 0, 255,
+      255, 255, 0, 255,
+      255, 255, 0, 255,
+      255, 255, 0, 255,
+      255, 255, 0, 255,
+      255, 255, 0, 255,
+      255, 255, 0, 255,
+
+      255, 0, 255, 255,
+      255, 0, 255, 255,
+      255, 0, 255, 255,
+      255, 0, 255, 255,
+      255, 0, 255, 255,
+      255, 0, 255, 255,
     ];
   }
 }
@@ -369,6 +410,8 @@ function initialize() {
   gl.useProgram(program);
   gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
   camera = new Camera(gl.canvas.width, gl.canvas.height);
+
+  gl.enable(gl.CULL_FACE);
 
   vertexColorAttributeLocation = gl.getAttribLocation(program, "a_color");
   positionAttributeLocation = gl.getAttribLocation(program, "a_position");
@@ -444,7 +487,6 @@ function step() {
 
 initialize();
 
-const plane = new Plane(100, 100, 0, 100, 100);
 const cube = new Cube(100, 100, 0, 100, 100, 100);
 primitives.push(cube);
 
