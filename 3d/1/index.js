@@ -412,6 +412,7 @@ function initialize() {
   camera = new Camera(gl.canvas.width, gl.canvas.height);
 
   gl.enable(gl.CULL_FACE);
+  gl.enable(gl.DEPTH_TEST);
 
   vertexColorAttributeLocation = gl.getAttribLocation(program, "a_color");
   positionAttributeLocation = gl.getAttribLocation(program, "a_position");
@@ -459,7 +460,7 @@ function render(camera) {
   /* --------------------------------------------------------------------------------- */
   /* 描画の下準備 */
   gl.clearColor(0, 0, 0, 0);
-  gl.clear(gl.COLOR_BUFFER_BIT);
+  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
   /* --------------------------------------------------------------------------------- */
   /* カメラの移動と回転と拡大縮小 */
