@@ -253,7 +253,7 @@ class Cube {
     this.depth = depth;
     this.vertexes = [];
     this.vertexColors = [];
-    this.matrix = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
+    this.matrix = new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
     this.transformes = [];
 
     this.setVertexes();
@@ -420,8 +420,6 @@ function initialize() {
 }
 
 function uploadVertex() {
-  const targetSprite = primitives[0];
-
   /* --------------------------------------------------------------------------------- */
   /* positionBuffer に頂点データをセットする */
   const positionBuffer = gl.createBuffer();
@@ -467,11 +465,14 @@ function render(camera) {
   /* カメラの移動と回転と拡大縮小 */
   gl.uniformMatrix4fv(cameraMatrixLocation, false, camera.matrix);
 
+  let offset = 0;
   for(let i = 0; i < primitives.length; i++ ) {
     gl.uniformMatrix4fv(matrixLocation, false, primitives[i].matrix);
 
     /* 頂点ベクトルの始点（0）から n つぶんの頂点を利用してプリミティブを描画 */
-    gl.drawArrays(gl.TRIANGLES, 0, primitives[i].vertexes.length / 3);
+    const length = primitives[i].vertexes.length / 3;
+    gl.drawArrays(gl.TRIANGLES, offset, length);
+    offset += length;
   }
 }
 
@@ -488,7 +489,9 @@ function step() {
 initialize();
 
 const cube = new Cube(100, 100, 0, 100, 100, 100);
+const cube2 = new Cube(150, 150, 0, 100, 100, 100);
 primitives.push(cube);
+primitives.push(cube2);
 
 camera.setTransformMatrix([0.0, -100.0, 0.0], [30.0, 10.0, 0.0], [1.0, 1.0, 1.0]);
 
