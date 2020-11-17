@@ -483,6 +483,12 @@ function step() {
   primitive.clearTransform();
   primitive.setRotateZ(rotZ++);
   primitive.calcTransformMatrix();
+
+  const primitive2 = primitives[1];
+  primitive2.clearTransform();
+  primitive2.setRotateZ(-rotZ);
+  primitive2.calcTransformMatrix();
+
   render(camera);
   requestAnimationFrame(step);
 }
@@ -490,7 +496,7 @@ function step() {
 initialize();
 
 const cube = new Cube(100, 100, 0, 100, 100, 100);
-const cube2 = new Cube(150, 150, 0, 100, 100, 100);
+const cube2 = new Cube(200, 200, 0, 100, 100, 100);
 primitives.push(cube);
 primitives.push(cube2);
 
