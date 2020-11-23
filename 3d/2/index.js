@@ -4,13 +4,10 @@ const vertexShaderSource = `
   uniform mat4 u_camera_matrix;
   uniform mat4 u_matrix;
   varying vec4 v_color;
-  uniform float u_fudgeFactor;
 
   void main() {
     vec4 position = u_camera_matrix * u_matrix * a_position;
-
-    float zToDivideBy = 1.0 + position.z * u_fudgeFactor;
-    gl_Position = vec4(position.xyz, zToDivideBy);
+    gl_Position = position;
 
     v_color = a_color;
   }
@@ -142,6 +139,15 @@ class Mat4 {
       0.0,   y, 0.0, 0.0,
       0.0, 0.0,   z, 0.0,
       0.0, 0.0, 0.0, 1.0
+    ];
+  }
+
+  static perspective(efficient) {
+    return [
+      1, 0, 0, 0,
+      0, 1, 0, 0,
+      0, 0, 1, efficient,
+      0, 0, 0, 1,
     ];
   }
 }
@@ -389,6 +395,7 @@ class Camera {
       Mat4.translate(-1.0, -1.0, 0.0),
       // Y軸のみ反転
       Mat4.scale(1.0, -1.0, 1.0),
+      Mat4.perspective(1.0)
     ];
 
     this.matrix = new Float32Array(Mat4.mulAll(transformes));
@@ -401,7 +408,6 @@ let vertexColorAttributeLocation;
 let positionAttributeLocation;
 let cameraMatrixLocation;
 let matrixLocation;
-let fudgeLocation;
 let camera;
 
 const primitives = [];
@@ -424,9 +430,6 @@ function initialize() {
   positionAttributeLocation = gl.getAttribLocation(program, "a_position");
   cameraMatrixLocation = gl.getUniformLocation(program, "u_camera_matrix");
   matrixLocation = gl.getUniformLocation(program, "u_matrix");
-  fudgeLocation = gl.getUniformLocation(program, "u_fudgeFactor");
-
-  gl.uniform1f(fudgeLocation, 1.0);
 }
 
 function uploadVertex() {
