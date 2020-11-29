@@ -142,12 +142,15 @@ class Mat4 {
     ];
   }
 
-  static perspective(efficient) {
+  static perspective(fov, aspect, near, far) {
+    const f = Math.tan(Math.PI * 0.5 - 0.5 * fov);
+    const rangeInv = 1.0 / (near - far);
+
     return [
-      1, 0, 0, 0,
-      0, 1, 0, 0,
-      0, 0, 1, efficient,
-      0, 0, 0, 1,
+      f / aspect, 0, 0, 0,
+      0, f, 0, 0,
+      0, 0, (near + far) * rangeInv, -1,
+      0, 0, near * far * rangeInv * 2, 0
     ];
   }
 }
@@ -390,12 +393,8 @@ class Camera {
       Mat4.scale(-1.0, -1.0, 1.0),
       // スケール変換
       Mat4.scale(scale[0], scale[1], scale[2]),
-      //クリップ座標系に変換
-      Mat4.scale(2.0 / this.width, 2.0 / this.height, 2 / depth),
-      Mat4.translate(-1.0, -1.0, 0.0),
-      // Y軸のみ反転
-      Mat4.scale(1.0, -1.0, 1.0),
-      Mat4.perspective(1.0)
+      // 透視投影変換
+      Mat4.perspective(Math.PI / 2, this.width / this.height, 1, 2000)
     ];
 
     this.matrix = new Float32Array(Mat4.mulAll(transformes));
@@ -507,12 +506,12 @@ function step() {
 
 initialize();
 
-const cube = new Cube(300, 100, 0, 100, 100, 200);
-const cube2 = new Cube(500, 200, 0, 100, 100, 100);
+const cube = new Cube(0, 0, -600, 100, 100, 200);
+const cube2 = new Cube(-50, -100, -300, 100, 100, 100);
 primitives.push(cube);
 primitives.push(cube2);
 
-camera.setTransformMatrix([0.0, -100.0, 0.0], [10.0, 10.0, 0.0], [1.0, 1.0, 1.0]);
+camera.setTransformMatrix([0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [1.0, 1.0, 1.0]);
 
 uploadVertex();
 step();
