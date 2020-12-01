@@ -55,7 +55,7 @@ function createProgram(gl, vertexShader, fragmentShader) {
 }
 
 function deg2rad(deg) {
-  return (deg / 180.0) * 2.0 * Math.PI;
+  return (deg / 180.0) * Math.PI;
 }
 
 class Mat4 {
@@ -151,6 +151,15 @@ class Mat4 {
       0, f, 0, 0,
       0, 0, (near + far) * rangeInv, -1,
       0, 0, near * far * rangeInv * 2, 0
+    ];
+  }
+
+  static perspective2(top, bottom, left, right, near, far) {
+    return [
+      (2 * near) / (right - left), 0, 0, 0,
+      0, (2 * near) / (top - bottom), 0, 0,
+      (right + left) / (right - left), (top + bottom) / (top - bottom), -(far + near) / (far - near), -1,
+      0, 0, -(2 * far * near) / (far - near), 0
     ];
   }
 }
@@ -371,30 +380,27 @@ class Camera {
   }
 
   setTransformMatrix(pos, rot, scale) {
-    const rad = rot.map( deg => (deg / 180.0) * 2.0 * Math.PI );
+    const rad = rot.map( deg => (deg / 180.0) * Math.PI );
     const cos = Math.cos(rad);
     const sin = Math.sin(rad);
     const depth = 400;
 
     const transformes = [
-      // カメラを移動するとスプライトは逆向きに動くので反転
-      Mat4.scale(-1.0, -1.0, 1.0),
       // カメラの平行移動
-      Mat4.translate(pos[0], pos[1], pos[2]),
-      // 回転中心をカメラ中心にする
-      Mat4.translate(this.width / 2.0, this.height / 2.0, 0.0),
+      //
+      // ワールド座標系から見た点をP(w), カメラ座標系から見た点をP(c),ワールド座標系から見たカメラ位置をC(w)とすると、
+      // P(c) = -C(w) + P(w)
+      // -C(w)だけ平行移動する変換行列Tとすると、
+      // P(c) = TP(w)
+      // 以下の変換行列がTに相当
+      Mat4.translate(-pos[0], -pos[1], -pos[2]),
       // カメラの回転
-      Mat4.rotateX(rad[0]),
-      Mat4.rotateY(rad[1]),
-      Mat4.rotateZ(rad[2]),
-      // 中心座標を戻す
-      Mat4.translate(-this.width / 2.0, -this.height / 2.0, 0.0),
-      // 反転を戻す
-      Mat4.scale(-1.0, -1.0, 1.0),
-      // スケール変換
-      Mat4.scale(scale[0], scale[1], scale[2]),
+      // カメラの回転角度と逆向きに回転することでワールド座標系の座標軸と一致する
+      Mat4.rotateX(-rad[0]),
+      Mat4.rotateY(-rad[1]),
+      Mat4.rotateZ(-rad[2]),
       // 透視投影変換
-      Mat4.perspective(Math.PI / 2, this.width / this.height, 1, 2000)
+      Mat4.perspective(deg2rad(50), this.width / this.height, 1, 2000)
     ];
 
     this.matrix = new Float32Array(Mat4.mulAll(transformes));
@@ -489,6 +495,11 @@ function render(camera) {
 }
 
 let rotZ = 0;
+
+let cameraPosition = [0, 0, 0];
+let cameraRotateZ = 0;
+let rotateAngle = 0;
+const rotateRadius = 500;
 function step() {
   const primitive = primitives[0];
   primitive.clearTransform();
@@ -500,16 +511,29 @@ function step() {
   primitive2.setRotateZ(-rotZ);
   primitive2.calcTransformMatrix();
 
+
+  rotateAngle+=0.5;
+  const rotateAngleRad = deg2rad(rotateAngle);
+  cameraRotateZ = rotateAngle + 90;
+  cameraPosition[0] = rotateRadius * Math.cos(rotateAngleRad);
+  cameraPosition[2] = -rotateRadius * Math.sin(rotateAngleRad) - 150;
+
+  camera.setTransformMatrix(cameraPosition, [0.0, cameraRotateZ, 0.0], [1.0, 1.0, 1.0]);
+
   render(camera);
   requestAnimationFrame(step);
 }
 
 initialize();
 
-const cube = new Cube(0, 0, -600, 100, 100, 200);
-const cube2 = new Cube(-50, -100, -300, 100, 100, 100);
+const cube = new Cube(0, 0, 0, 50, 50, 50);
+const cube2 = new Cube(0, 0, -300, 50, 50, 50);
+const cube3 = new Cube(-150, 0, -150, 50, 50, 50);
+const cube4 = new Cube(150, 0, -150, 50, 50, 50);
 primitives.push(cube);
 primitives.push(cube2);
+primitives.push(cube3);
+primitives.push(cube4);
 
 camera.setTransformMatrix([0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [1.0, 1.0, 1.0]);
 
