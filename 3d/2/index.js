@@ -222,7 +222,6 @@ class Mat4 {
       ...cameraPosition, 1
     ];
 
-    console.log(lookAtMat);
     return lookAtMat;
   }
 
@@ -503,7 +502,7 @@ class Camera {
 
   setLookAtMatrix(target, pos) {
     const transformes = [
-      Mat4.inverse(Mat4.lookAt([0, 0, 0], pos)),
+      Mat4.inverse(Mat4.lookAt(target, pos)),
       Mat4.perspective(deg2rad(50), this.width / this.height, 1, 2000)
     ];
 
@@ -599,7 +598,7 @@ function render(camera) {
 }
 
 let rotZ = 0;
-
+let cameraWorkStep = 0;
 let cameraPosition = [0, 0, 0];
 let cameraRotateZ = 0;
 let rotateAngle = 0;
@@ -618,8 +617,19 @@ function step() {
   cameraPosition[2] = -rotateRadius * Math.sin(rotateAngleRad);
   cameraPosition[1] = 300;
 
+  cameraPosition[0] = 500;
+  cameraPosition[1] = 500;
+  cameraPosition[2] = 0;
+
+  cameraWorkStep += 0.01;
+
+  if(cameraWorkStep > 4.0) {
+    cameraWorkStep = 0;
+  }
+
+  let targetPrimitive = primitives[Math.floor(cameraWorkStep)];
   //camera.setTransformMatrix(cameraPosition, [0.0, cameraRotateZ, 0.0], [1.0, 1.0, 1.0]);
-  camera.setLookAtMatrix(primitives[0].position, cameraPosition);
+  camera.setLookAtMatrix(targetPrimitive.position, cameraPosition);
 
   render(camera);
   requestAnimationFrame(step);
