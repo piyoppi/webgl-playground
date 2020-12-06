@@ -98,11 +98,13 @@ export class Cube {
     this.depth = depth;
     this.vertexes = [];
     this.vertexColors = [];
+    this.normals = [];
     this.matrix = new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
     this.transformes = [];
 
     this.setVertexes();
     this.setColors();
+    this.setNormalVec();
   }
 
   setRotateZ(deg, index = -1) {
@@ -138,58 +140,104 @@ export class Cube {
     ];
 
     this.vertexes = [
-      ...Plane.xyPlaneVertexes(this.position[0] - center[0], this.position[1] - center[1], this.position[2] - center[2], this.width, this.height, true),
-      ...Plane.zyPlaneVertexes(this.position[0] + center[0], this.position[1] - center[1], this.position[2] - center[2], this.height, this.depth, true),
-      ...Plane.xyPlaneVertexes(this.position[0] - center[0], this.position[1] - center[1], this.position[2] + center[2], this.width, this.height, false),
-      ...Plane.zyPlaneVertexes(this.position[0] - center[0], this.position[1] - center[1], this.position[2] - center[2], this.height, this.depth, false),
-      ...Plane.xzPlaneVertexes(this.position[0] - center[0], this.position[1] + center[1], this.position[2] - center[2], this.width, this.depth, true),
-      ...Plane.xzPlaneVertexes(this.position[0] - center[0], this.position[1] - center[1], this.position[2] - center[2], this.width, this.depth, false),
+      ...Plane.xyPlaneVertexes(this.position[0] - center[0], this.position[1] - center[1], this.position[2] - center[2], this.width, this.height, true),    // 前面
+      ...Plane.zyPlaneVertexes(this.position[0] + center[0], this.position[1] - center[1], this.position[2] - center[2], this.height, this.depth, true),    // 右側面
+      ...Plane.xyPlaneVertexes(this.position[0] - center[0], this.position[1] - center[1], this.position[2] + center[2], this.width, this.height, false),   // 背面
+      ...Plane.zyPlaneVertexes(this.position[0] - center[0], this.position[1] - center[1], this.position[2] - center[2], this.height, this.depth, false),   // 左側面
+      ...Plane.xzPlaneVertexes(this.position[0] - center[0], this.position[1] + center[1], this.position[2] - center[2], this.width, this.depth, true),     // 上面
+      ...Plane.xzPlaneVertexes(this.position[0] - center[0], this.position[1] - center[1], this.position[2] - center[2], this.width, this.depth, false),    // 下面
     ]
+  }
+
+  setNormalVec() {
+    this.normals = [
+      0, 0, -1,
+      0, 0, -1,
+      0, 0, -1,
+      0, 0, -1,
+      0, 0, -1,
+      0, 0, -1,
+
+      1, 0, 0,
+      1, 0, 0,
+      1, 0, 0,
+      1, 0, 0,
+      1, 0, 0,
+      1, 0, 0,
+
+      0, 0, 1,
+      0, 0, 1,
+      0, 0, 1,
+      0, 0, 1,
+      0, 0, 1,
+      0, 0, 1,
+
+      -1, 0, 0,
+      -1, 0, 0,
+      -1, 0, 0,
+      -1, 0, 0,
+      -1, 0, 0,
+      -1, 0, 0,
+
+      0, 1, 0,
+      0, 1, 0,
+      0, 1, 0,
+      0, 1, 0,
+      0, 1, 0,
+      0, 1, 0,
+
+      0, -1, 0,
+      0, -1, 0,
+      0, -1, 0,
+      0, -1, 0,
+      0, -1, 0,
+      0, -1, 0,
+    ];
   }
 
   setColors() {
     this.vertexColors = [
-      255, 0, 0, 255,
-      255, 0, 0, 255,
-      255, 0, 0, 255,
-      255, 0, 0, 255,
-      255, 0, 0, 255,
-      255, 0, 0, 255,
+      1, 0, 0, 1,
+      1, 0, 0, 1,
+      1, 0, 0, 1,
+      1, 0, 0, 1,
+      1, 0, 0, 1,
+      1, 0, 0, 1,
 
-      0, 255, 0, 255,
-      0, 255, 0, 255,
-      0, 255, 0, 255,
-      0, 255, 0, 255,
-      0, 255, 0, 255,
-      0, 255, 0, 255,
+      1, 0, 0, 1,
+      1, 0, 0, 1,
+      1, 0, 0, 1,
+      1, 0, 0, 1,
+      1, 0, 0, 1,
+      1, 0, 0, 1,
 
-      0, 0, 255, 255,
-      0, 0, 255, 255,
-      0, 0, 255, 255,
-      0, 0, 255, 255,
-      0, 0, 255, 255,
-      0, 0, 255, 255,
+      1, 0, 0, 1,
+      1, 0, 0, 1,
+      1, 0, 0, 1,
+      1, 0, 0, 1,
+      1, 0, 0, 1,
+      1, 0, 0, 1,
 
-      0, 255, 255, 255,
-      0, 255, 255, 255,
-      0, 255, 255, 255,
-      0, 255, 255, 255,
-      0, 255, 255, 255,
-      0, 255, 255, 255,
+      1, 0, 0, 1,
+      1, 0, 0, 1,
+      1, 0, 0, 1,
+      1, 0, 0, 1,
+      1, 0, 0, 1,
+      1, 0, 0, 1,
 
-      255, 255, 0, 255,
-      255, 255, 0, 255,
-      255, 255, 0, 255,
-      255, 255, 0, 255,
-      255, 255, 0, 255,
-      255, 255, 0, 255,
+      1, 0, 0, 1,
+      1, 0, 0, 1,
+      1, 0, 0, 1,
+      1, 0, 0, 1,
+      1, 0, 0, 1,
+      1, 0, 0, 1,
 
-      255, 0, 255, 255,
-      255, 0, 255, 255,
-      255, 0, 255, 255,
-      255, 0, 255, 255,
-      255, 0, 255, 255,
-      255, 0, 255, 255,
+      1, 0, 0, 1,
+      1, 0, 0, 1,
+      1, 0, 0, 1,
+      1, 0, 0, 1,
+      1, 0, 0, 1,
+      1, 0, 0, 1,
     ];
   }
 }

@@ -1,28 +1,38 @@
 import {Cube} from './primitive.js';
 import {deg2rad} from './mathHelper.js';
 import {Camera} from './camera.js';
+import {Vec3} from './matrix.js';
 
 const vertexShaderSource = `
   attribute vec4 a_position;
   attribute vec4 a_color;
+  attribute vec3 a_normal;
   uniform mat4 u_camera_matrix;
   uniform mat4 u_matrix;
   varying vec4 v_color;
+  varying vec3 v_normal;
 
   void main() {
     vec4 position = u_camera_matrix * u_matrix * a_position;
     gl_Position = position;
 
     v_color = a_color;
+    v_normal = a_normal;
   }
 `;
 
 const fragmentShaderSource = `
   precision mediump float;
+  uniform vec3 u_light;
   varying vec4 v_color;
+  varying vec3 v_normal;
 
   void main() {
+    vec3 normal = normalize(v_normal);
+    float light = dot(normal, u_light);
     gl_FragColor = v_color;
+
+    gl_FragColor.rgb *= light;
   }
 `;
 
@@ -64,6 +74,8 @@ let vertexColorAttributeLocation;
 let positionAttributeLocation;
 let cameraMatrixLocation;
 let matrixLocation;
+let normalLocation;
+let lightLocation;
 let camera;
 
 const primitives = [];
@@ -82,46 +94,39 @@ function initialize() {
   gl.enable(gl.CULL_FACE);
   gl.enable(gl.DEPTH_TEST);
 
+  normalLocation = gl.getAttribLocation(program, "a_normal");
   vertexColorAttributeLocation = gl.getAttribLocation(program, "a_color");
   positionAttributeLocation = gl.getAttribLocation(program, "a_position");
   cameraMatrixLocation = gl.getUniformLocation(program, "u_camera_matrix");
   matrixLocation = gl.getUniformLocation(program, "u_matrix");
+  lightLocation = gl.getUniformLocation(program, "u_light");
 }
 
 function uploadVertex() {
-  /* --------------------------------------------------------------------------------- */
-  /* positionBuffer に頂点データをセットする */
+  const normalBuffer = gl.createBuffer();
+  const normals = new Float32Array(primitives.map( primitive => primitive.normals ).flat());
+  gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, normals, gl.STATIC_DRAW);
+  gl.enableVertexAttribArray(normalLocation);
+  gl.vertexAttribPointer(normalLocation, 3, gl.FLOAT, false, 0, 0);
+
   const positionBuffer = gl.createBuffer();
   const vertexes = new Float32Array(primitives.map( primitive => primitive.vertexes ).flat());
   gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-  gl.bufferData(
-    gl.ARRAY_BUFFER,
-    vertexes,
-    gl.STATIC_DRAW
-  );
-
-  /* --------------------------------------------------------------------------------- */
-  /* positionBuffer に頂点データをセットする */
-  const colorBuffer = gl.createBuffer();
-  const colors = new Uint8Array(primitives.map( primitive => primitive.vertexColors ).flat());
-  gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
-  gl.bufferData(
-    gl.ARRAY_BUFFER,
-    colors,
-    gl.STATIC_DRAW
-  );
-
-  /* --------------------------------------------------------------------------------- */
-  /* 属性(a_position)にバッファ(positionBuffer)の内容を流し込む */
+  gl.bufferData(gl.ARRAY_BUFFER, vertexes, gl.STATIC_DRAW);
   gl.enableVertexAttribArray(positionAttributeLocation);
-  gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
   gl.vertexAttribPointer(positionAttributeLocation, 3, gl.FLOAT, false, 0, 0);
 
-  /* --------------------------------------------------------------------------------- */
-  /* 属性(a_color)にバッファ(colorBuffer)の内容を流し込む */
-  gl.enableVertexAttribArray(vertexColorAttributeLocation);
+  const colorBuffer = gl.createBuffer();
+  const colors = new Float32Array(primitives.map( primitive => primitive.vertexColors ).flat());
   gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
-  gl.vertexAttribPointer(vertexColorAttributeLocation, 4, gl.UNSIGNED_BYTE, false, 0, 0);
+  gl.bufferData(gl.ARRAY_BUFFER, colors, gl.STATIC_DRAW);
+  gl.enableVertexAttribArray(vertexColorAttributeLocation);
+  gl.vertexAttribPointer(vertexColorAttributeLocation, 4, gl.FLOAT, false, 0, 0);
+}
+
+function setLight() {
+  gl.uniform3fv(lightLocation, new Float32Array(Vec3.normalize([0.5, 0.7, 1])));
 }
 
 function render(camera) {
@@ -185,6 +190,7 @@ function step() {
 }
 
 initialize();
+setLight();
 
 const cube = new Cube(0, 0, 0, 50, 50, 50);
 const cube2 = new Cube(0, 0, -300, 50, 50, 50);
