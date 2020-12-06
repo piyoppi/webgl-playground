@@ -142,6 +142,70 @@ class Mat4 {
     ];
   }
 
+  static inverse(mat) {
+    const a11 = mat[0];
+    const a12 = mat[4];
+    const a13 = mat[8];
+    const a14 = mat[12];
+    const a21 = mat[1];
+    const a22 = mat[5];
+    const a23 = mat[9];
+    const a24 = mat[13];
+    const a31 = mat[2];
+    const a32 = mat[6];
+    const a33 = mat[10];
+    const a34 = mat[14];
+    const a41 = mat[3];
+    const a42 = mat[7];
+    const a43 = mat[11];
+    const a44 = mat[15];
+
+    const det =
+      a11 * a22 * a33 * a44
+      + a11 * a23 * a34 * a42
+      + a11 * a24 * a32 * a43
+      - a11 * a24 * a33 * a42
+      - a11 * a23 * a32 * a44
+      - a11 * a22 * a34 * a43
+      - a12 * a21 * a33 * a44
+      - a13 * a21 * a34 * a42
+      - a14 * a21 * a32 * a43
+      + a14 * a21 * a33 * a42
+      + a13 * a21 * a32 * a44
+      + a12 * a21 * a34 * a43
+      + a12 * a23 * a31 * a44
+      + a13 * a24 * a31 * a42
+      + a14 * a22 * a31 * a43
+      - a14 * a23 * a31 * a42
+      - a13 * a22 * a31 * a44
+      - a12 * a24 * a31 * a43
+      - a12 * a23 * a34 * a41
+      - a13 * a24 * a32 * a41
+      - a14 * a22 * a33 * a41
+      + a14 * a23 * a32 * a41
+      + a13 * a22 * a34 * a41
+      + a12 * a24 * a33 * a41;
+
+    return [
+      (a22 * a33 * a44 + a23 * a34 * a42 + a24 * a32 * a43 - a24 * a33 * a42 - a23 * a32 * a44 - a22 * a34 * a43) / det,
+      (-a12 * a33 * a44 - a13 * a34 * a42 - a14 * a32 * a43 + a14 * a33 * a42 + a13 * a32 * a44 + a12 * a34 * a43) / det,
+      (a12 * a23 * a44 + a13 * a24 * a42 + a14 * a22 * a43 - a14 * a23 * a42 - a13 * a22 * a44 - a12 * a24 * a43) / det,
+      (-a12 * a23 * a34 - a13 * a24 * a32 - a14 * a22 * a33 + a14 * a23 * a32 + a13 * a22 * a34 + a12 * a24 * a33) / det,
+      (-a21 * a33 * a44 - a23 * a34 * a41 - a24 * a31 * a43 + a24 * a33 * a41 + a23 * a31 * a44 + a21 * a34 * a43) / det,
+      (a11 * a33 * a44 + a13 * a34 * a41 + a14 * a31 * a43 - a14 * a33 * a41 - a13 * a31 * a44 - a11 * a34 * a43) / det,
+      (-a11 * a23 * a44 - a13 * a24 * a41 - a14 * a21 * a43 + a14 * a23 * a41 + a13 * a21 * a44 + a11 * a24 * a43) / det,
+      (a11 * a23 * a34 + a13 * a24 * a31 + a14 * a21 * a33 - a14 * a23 * a31 - a13 * a21 * a34 - a11 * a24 * a33) / det,
+      (a21 * a32 * a44 + a22 * a34 * a41 + a24 * a31 * a42 - a24 * a32 * a41 - a22 * a31 * a44 - a21 * a34 * a42) / det,
+      (-a11 * a32 * a44 - a12 * a34 * a41 - a14 * a31 * a42 + a14 * a32 * a41 + a12 * a31 * a44 + a11 * a34 * a42) / det,
+      (a11 * a22 * a44 + a12 * a24 * a41 + a14 * a21 * a42 - a14 * a22 * a41 - a12 * a21 * a44 - a11 * a24 * a42) / det,
+      (-a11 * a22 * a34 - a12 * a24 * a31 - a14 * a21 * a32 + a14 * a22 * a31 + a12 * a21 * a34 + a11 * a24 * a32) / det,
+      (-a21 * a32 * a43 - a22 * a33 * a41 - a23 * a31 * a42 + a23 * a32 * a41 + a22 * a31 * a43 + a21 * a33 * a42) / det,
+      (a11 * a32 * a43 + a12 * a33 * a41 + a13 * a31 * a42 - a13 * a32 * a41 - a12 * a31 * a43 - a11 * a33 * a42) / det,
+      (-a11 * a22 * a43 - a12 * a23 * a41 - a13 * a21 * a42 + a13 * a22 * a41 + a12 * a21 * a43 + a11 * a23 * a42) / det,
+      (a11 * a22 * a33 + a12 * a23 * a31 + a13 * a21 * a32 - a13 * a22 * a31 - a12 * a21 * a33 - a11 * a23 * a32) / det
+    ];
+  }
+
   static perspective(fov, aspect, near, far) {
     const f = Math.tan(Math.PI * 0.5 - 0.5 * fov);
     const rangeInv = 1.0 / (near - far);
