@@ -144,20 +144,20 @@ class Mat4 {
 
   static inverse(mat) {
     const a11 = mat[0];
-    const a12 = mat[4];
-    const a13 = mat[8];
-    const a14 = mat[12];
-    const a21 = mat[1];
+    const a12 = mat[1];
+    const a13 = mat[2];
+    const a14 = mat[3];
+    const a21 = mat[4];
     const a22 = mat[5];
-    const a23 = mat[9];
-    const a24 = mat[13];
-    const a31 = mat[2];
-    const a32 = mat[6];
+    const a23 = mat[6];
+    const a24 = mat[7];
+    const a31 = mat[8];
+    const a32 = mat[9];
     const a33 = mat[10];
-    const a34 = mat[14];
-    const a41 = mat[3];
-    const a42 = mat[7];
-    const a43 = mat[11];
+    const a34 = mat[11];
+    const a41 = mat[12];
+    const a42 = mat[13];
+    const a43 = mat[14];
     const a44 = mat[15];
 
     const det =
@@ -206,6 +206,26 @@ class Mat4 {
     ];
   }
 
+  static lookAt(targetPosition, cameraPosition) {
+    const cameraZAxis = Vec3.normalize([
+      cameraPosition[0] - targetPosition[0],
+      cameraPosition[1] - targetPosition[1],
+      cameraPosition[2] - targetPosition[2]
+    ]);
+    const cameraXAxis = Vec3.cross([0, 1, 0], cameraZAxis);
+    const cameraYAxis = Vec3.cross(cameraZAxis, cameraXAxis);
+
+    const lookAtMat = [
+      ...cameraXAxis, 0,
+      ...cameraYAxis, 0,
+      ...cameraZAxis, 0,
+      ...cameraPosition, 1
+    ];
+
+    console.log(lookAtMat);
+    return lookAtMat;
+  }
+
   static perspective(fov, aspect, near, far) {
     const f = Math.tan(Math.PI * 0.5 - 0.5 * fov);
     const rangeInv = 1.0 / (near - far);
@@ -228,6 +248,21 @@ class Mat4 {
   }
 }
 
+class Vec3 {
+  static normalize(vec) {
+    const len = Math.sqrt(vec[0] * vec[0] + vec[1] * vec[1] + vec[2] * vec[2]);
+    return len > 0.0001 ? [vec[0] / len, vec[1] / len, vec[2] / len] : [0, 0, 0];
+  }
+
+  static cross(a, b) {
+    return [
+      a[1] * b[2] - b[1] * a[2],
+      a[2] * b[0] - b[2] * a[0],
+      a[0] * b[1] - b[0] * a[1]
+    ];
+  }
+}
+
 class Mat1 {
   static mul4(a, b) {
     return [
@@ -241,9 +276,7 @@ class Mat1 {
 
 class Plane {
   constructor(x, y, z, width, height) {
-    this.x = x;
-    this.y = y;
-    this.z = z;
+    this.position = [x, y, z];
     this.width = width;
     this.height = height;
     this.vertexes = [];
@@ -251,7 +284,7 @@ class Plane {
   }
 
   setXYPlaneVertexes() {
-    this.vertexes = Plane.xyPlaneVertexes(this.x, this.y, this.z, this.width, this.height);
+    this.vertexes = Plane.xyPlaneVertexes(this.position[0], this.position[1], this.position[2], this.width, this.height);
   }
 
   static xyPlaneVertexes(x1, y1, z, width, height, isFront) {
@@ -332,9 +365,7 @@ class Plane {
 
 class Cube {
   constructor(x, y, z, width, height, depth) {
-    this.x = x;
-    this.y = y;
-    this.z = z;
+    this.position = [x, y, z];
     this.width = width;
     this.height = height;
     this.depth = depth;
@@ -349,9 +380,9 @@ class Cube {
 
   setRotateZ(deg, index = -1) {
     const rotateMat = [
-      Mat4.translate(-this.x, -this.y, 0),
+      Mat4.translate(-this.position[0], -this.position[1], 0),
       Mat4.rotateZ(deg2rad(deg)),
-      Mat4.translate(this.x, this.y, 0),
+      Mat4.translate(this.position[0], this.position[1], 0),
     ];
     this._setTransformes(Mat4.mulAll(rotateMat));
   }
@@ -380,12 +411,12 @@ class Cube {
     ];
 
     this.vertexes = [
-      ...Plane.xyPlaneVertexes(this.x - center[0], this.y - center[1], this.z - center[2], this.width, this.height, true),
-      ...Plane.zyPlaneVertexes(this.x + center[0], this.y - center[1], this.z - center[2], this.height, this.depth, true),
-      ...Plane.xyPlaneVertexes(this.x - center[0], this.y - center[1], this.z + center[2], this.width, this.height, false),
-      ...Plane.zyPlaneVertexes(this.x - center[0], this.y - center[1], this.z - center[2], this.height, this.depth, false),
-      ...Plane.xzPlaneVertexes(this.x - center[0], this.y + center[1], this.z - center[2], this.width, this.depth, true),
-      ...Plane.xzPlaneVertexes(this.x - center[0], this.y - center[1], this.z - center[2], this.width, this.depth, false),
+      ...Plane.xyPlaneVertexes(this.position[0] - center[0], this.position[1] - center[1], this.position[2] - center[2], this.width, this.height, true),
+      ...Plane.zyPlaneVertexes(this.position[0] + center[0], this.position[1] - center[1], this.position[2] - center[2], this.height, this.depth, true),
+      ...Plane.xyPlaneVertexes(this.position[0] - center[0], this.position[1] - center[1], this.position[2] + center[2], this.width, this.height, false),
+      ...Plane.zyPlaneVertexes(this.position[0] - center[0], this.position[1] - center[1], this.position[2] - center[2], this.height, this.depth, false),
+      ...Plane.xzPlaneVertexes(this.position[0] - center[0], this.position[1] + center[1], this.position[2] - center[2], this.width, this.depth, true),
+      ...Plane.xzPlaneVertexes(this.position[0] - center[0], this.position[1] - center[1], this.position[2] - center[2], this.width, this.depth, false),
     ]
   }
 
@@ -464,6 +495,15 @@ class Camera {
       Mat4.rotateY(-rad[1]),
       Mat4.rotateZ(-rad[2]),
       // 透視投影変換
+      Mat4.perspective(deg2rad(50), this.width / this.height, 1, 2000)
+    ];
+
+    this.matrix = new Float32Array(Mat4.mulAll(transformes));
+  }
+
+  setLookAtMatrix(target, pos) {
+    const transformes = [
+      Mat4.inverse(Mat4.lookAt([0, 0, 0], pos)),
       Mat4.perspective(deg2rad(50), this.width / this.height, 1, 2000)
     ];
 
@@ -565,24 +605,21 @@ let cameraRotateZ = 0;
 let rotateAngle = 0;
 const rotateRadius = 500;
 function step() {
-  const primitive = primitives[0];
-  primitive.clearTransform();
-  primitive.setRotateZ(rotZ++);
-  primitive.calcTransformMatrix();
-
-  const primitive2 = primitives[1];
-  primitive2.clearTransform();
-  primitive2.setRotateZ(-rotZ);
-  primitive2.calcTransformMatrix();
-
+  primitives.forEach(primitive => {
+    primitive.clearTransform();
+    primitive.setRotateZ(rotZ++);
+    primitive.calcTransformMatrix();
+  });
 
   rotateAngle+=0.5;
   const rotateAngleRad = deg2rad(rotateAngle);
   cameraRotateZ = rotateAngle + 90;
   cameraPosition[0] = rotateRadius * Math.cos(rotateAngleRad);
-  cameraPosition[2] = -rotateRadius * Math.sin(rotateAngleRad) - 150;
+  cameraPosition[2] = -rotateRadius * Math.sin(rotateAngleRad);
+  cameraPosition[1] = 300;
 
-  camera.setTransformMatrix(cameraPosition, [0.0, cameraRotateZ, 0.0], [1.0, 1.0, 1.0]);
+  //camera.setTransformMatrix(cameraPosition, [0.0, cameraRotateZ, 0.0], [1.0, 1.0, 1.0]);
+  camera.setLookAtMatrix(primitives[0].position, cameraPosition);
 
   render(camera);
   requestAnimationFrame(step);
