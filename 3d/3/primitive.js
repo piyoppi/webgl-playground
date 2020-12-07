@@ -103,7 +103,7 @@ export class Cube {
     this.transformes = [];
 
     this.setVertexes();
-    this.setColors();
+    this.setColors(1, 0, 0, 1);
     this.setNormalVec();
   }
 
@@ -195,49 +195,49 @@ export class Cube {
     ];
   }
 
-  setColors() {
+  setColors(r, g, b, a) {
     this.vertexColors = [
-      1, 0, 0, 1,
-      1, 0, 0, 1,
-      1, 0, 0, 1,
-      1, 0, 0, 1,
-      1, 0, 0, 1,
-      1, 0, 0, 1,
+      r, g, b, a,
+      r, g, b, a,
+      r, g, b, a,
+      r, g, b, a,
+      r, g, b, a,
+      r, g, b, a,
 
-      1, 0, 0, 1,
-      1, 0, 0, 1,
-      1, 0, 0, 1,
-      1, 0, 0, 1,
-      1, 0, 0, 1,
-      1, 0, 0, 1,
+      r, g, b, a,
+      r, g, b, a,
+      r, g, b, a,
+      r, g, b, a,
+      r, g, b, a,
+      r, g, b, a,
 
-      1, 0, 0, 1,
-      1, 0, 0, 1,
-      1, 0, 0, 1,
-      1, 0, 0, 1,
-      1, 0, 0, 1,
-      1, 0, 0, 1,
+      r, g, b, a,
+      r, g, b, a,
+      r, g, b, a,
+      r, g, b, a,
+      r, g, b, a,
+      r, g, b, a,
 
-      1, 0, 0, 1,
-      1, 0, 0, 1,
-      1, 0, 0, 1,
-      1, 0, 0, 1,
-      1, 0, 0, 1,
-      1, 0, 0, 1,
+      r, g, b, a,
+      r, g, b, a,
+      r, g, b, a,
+      r, g, b, a,
+      r, g, b, a,
+      r, g, b, a,
 
-      1, 0, 0, 1,
-      1, 0, 0, 1,
-      1, 0, 0, 1,
-      1, 0, 0, 1,
-      1, 0, 0, 1,
-      1, 0, 0, 1,
+      r, g, b, a,
+      r, g, b, a,
+      r, g, b, a,
+      r, g, b, a,
+      r, g, b, a,
+      r, g, b, a,
 
-      1, 0, 0, 1,
-      1, 0, 0, 1,
-      1, 0, 0, 1,
-      1, 0, 0, 1,
-      1, 0, 0, 1,
-      1, 0, 0, 1,
+      r, g, b, a,
+      r, g, b, a,
+      r, g, b, a,
+      r, g, b, a,
+      r, g, b, a,
+      r, g, b, a,
     ];
   }
 }

@@ -17,7 +17,7 @@ const vertexShaderSource = `
     gl_Position = position;
 
     v_color = a_color;
-    v_normal = a_normal;
+    v_normal = mat3(u_matrix) * a_normal;
   }
 `;
 
@@ -194,8 +194,11 @@ setLight();
 
 const cube = new Cube(0, 0, 0, 50, 50, 50);
 const cube2 = new Cube(0, 0, -300, 50, 50, 50);
+cube2.setColors(0, 1, 0, 1);
 const cube3 = new Cube(-150, 0, -150, 50, 50, 50);
+cube3.setColors(0, 0, 1, 1);
 const cube4 = new Cube(150, 0, -150, 50, 50, 50);
+cube4.setColors(1, 1, 0, 1);
 primitives.push(cube);
 primitives.push(cube2);
 primitives.push(cube3);
