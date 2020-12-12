@@ -8,11 +8,14 @@ const vertexShaderSource = `
   attribute vec4 a_color;
   attribute vec3 a_normal;
   uniform vec3 u_light;
+  uniform vec3 u_view_position;
   uniform mat4 u_camera_matrix;
   uniform mat4 u_matrix;
+
   varying vec4 v_color;
   varying vec3 v_normal;
   varying vec3 v_surfaceToLight;
+  varying vec3 v_surfaceToView;
 
   void main() {
     vec4 position = u_camera_matrix * u_matrix * a_position;
@@ -22,24 +25,30 @@ const vertexShaderSource = `
     v_normal = mat3(u_matrix) * a_normal;
 
     v_surfaceToLight = u_light - (u_matrix * a_position).xyz;
+    v_surfaceToView = u_view_position - (u_matrix * a_position).xyz;
   }
 `;
 
 const fragmentShaderSource = `
   precision mediump float;
+  uniform float u_shininess;
   varying vec4 v_color;
   varying vec3 v_normal;
   varying vec3 v_surfaceToLight;
+  varying vec3 v_surfaceToView;
 
   void main() {
     vec3 normal = normalize(v_normal);
     vec3 surfaceToLight = normalize(v_surfaceToLight);
 
+    vec3 reflectionVec  = normalize(v_surfaceToLight + v_surfaceToView);
     float light = dot(normal, surfaceToLight);
+    float specular = pow(dot(normal, reflectionVec), u_shininess);
 
     gl_FragColor = v_color;
 
     gl_FragColor.rgb *= light;
+    gl_FragColor.rgb += specular;
   }
 `;
 
@@ -83,6 +92,8 @@ let cameraMatrixLocation;
 let matrixLocation;
 let normalLocation;
 let lightLocation;
+let viewPositionLocation;
+let shininessLocation;
 let camera;
 
 const primitives = [];
@@ -107,6 +118,8 @@ function initialize() {
   cameraMatrixLocation = gl.getUniformLocation(program, "u_camera_matrix");
   matrixLocation = gl.getUniformLocation(program, "u_matrix");
   lightLocation = gl.getUniformLocation(program, "u_light");
+  viewPositionLocation = gl.getUniformLocation(program, "u_view_position");
+  shininessLocation = gl.getUniformLocation(program, "u_shininess");
 }
 
 function uploadVertex() {
@@ -134,6 +147,14 @@ function uploadVertex() {
 
 function setSpotLight(x, y, z) {
   gl.uniform3fv(lightLocation, new Float32Array([x, y, z]));
+}
+
+function setViewPosition(x, y, z) {
+  gl.uniform3fv(viewPositionLocation, new Float32Array([x, y, z]));
+}
+
+function setShininess(shininess) {
+  gl.uniform1f(shininessLocation, shininess);
 }
 
 function render(camera) {
@@ -173,7 +194,7 @@ function step() {
 
   rotateAngle+=2;
   const rotateAngleRad = deg2rad(rotateAngle);
-  setSpotLight(rotateRadius * Math.cos(rotateAngleRad), 300, -rotateRadius * Math.sin(rotateAngleRad));
+  setSpotLight(rotateRadius * Math.cos(rotateAngleRad), 300, -rotateRadius * Math.sin(rotateAngleRad) - 150);
 
   cameraPosition[0] = 500;
   cameraPosition[1] = 500;
@@ -201,6 +222,7 @@ primitives.push(cube3);
 primitives.push(cube4);
 
 camera.setTransformMatrix([0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [1.0, 1.0, 1.0]);
+setShininess(10);
 
 uploadVertex();
 step();
