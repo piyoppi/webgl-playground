@@ -33,7 +33,8 @@ const vertexShaderSource = `
 const fragmentShaderSource = `
   precision mediump float;
   uniform float u_shininess;
-  uniform float u_limit;
+  uniform float u_inner_limit;
+  uniform float u_outer_limit;
   uniform vec3 v_light_direction;
 
   varying vec4 v_color;
@@ -47,13 +48,14 @@ const fragmentShaderSource = `
     vec3 reflectionVec  = normalize(v_surfaceToLight + v_surfaceToView);
     float lightEfficience = dot(surfaceToLight, -v_light_direction);
 
-    float light = 0.0;
-    float specular = 0.0;
+    // x = u_inner_limit, y = 0
+    // x = u_outer_limit, y = 1
+    // 条件で直線の式（ y = ax + b ) に当てはめて解くと、 u_inner_limit ~ u_outer_limit 間に
+    // ぼかしをかける係数を計算できる。
+    float inLight = clamp((lightEfficience - u_inner_limit) / (u_outer_limit - u_inner_limit), 0.0, 1.0);
 
-    if( lightEfficience > u_limit ) {
-      light = dot(normal, surfaceToLight);
-      specular = pow(dot(normal, reflectionVec), u_shininess);
-    }
+    float light = inLight * dot(normal, surfaceToLight);
+    float specular = inLight * pow(dot(normal, reflectionVec), u_shininess);
 
     gl_FragColor = v_color;
 
@@ -104,7 +106,8 @@ let normalLocation;
 let lightLocation;
 let viewPositionLocation;
 let shininessLocation;
-let lightLimitLocation;
+let lightInnerLimitLocation;
+let lightOuterLimitLocation;
 let lightDirectionLocation;
 let camera;
 
@@ -133,7 +136,8 @@ function initialize() {
   viewPositionLocation = gl.getUniformLocation(program, "u_view_position");
   shininessLocation = gl.getUniformLocation(program, "u_shininess");
 
-  lightLimitLocation = gl.getUniformLocation(program, "u_limit");
+  lightInnerLimitLocation = gl.getUniformLocation(program, "u_inner_limit");
+  lightOuterLimitLocation = gl.getUniformLocation(program, "u_outer_limit");
   lightDirectionLocation = gl.getUniformLocation(program, "v_light_direction");
 }
 
@@ -172,8 +176,9 @@ function setShininess(shininess) {
   gl.uniform1f(shininessLocation, shininess);
 }
 
-function setSpotLight(direction, limit) {
-  gl.uniform1f(lightLimitLocation, limit);
+function setSpotLight(direction, limitInner, limitOuter) {
+  gl.uniform1f(lightInnerLimitLocation, limitInner);
+  gl.uniform1f(lightOuterLimitLocation, limitOuter);
   gl.uniform3fv(lightDirectionLocation, new Float32Array(direction));
 }
 
@@ -214,7 +219,6 @@ function step() {
 
   rotateAngle+=2;
   const rotateAngleRad = deg2rad(rotateAngle);
-  setLight(0, 300, 0);
 
   cameraPosition[0] = 500;
   cameraPosition[1] = 500;
@@ -234,7 +238,8 @@ primitives.push(cube);
 
 camera.setTransformMatrix([0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [1.0, 1.0, 1.0]);
 setShininess(30);
-setSpotLight(Vec3.normalize([0, -1, 0]), 0.97);
+setLight(0, 100, 0);
+setSpotLight(Vec3.normalize([0, -1, 0]), 0.5, 0.9);
 
 uploadVertex();
 step();
